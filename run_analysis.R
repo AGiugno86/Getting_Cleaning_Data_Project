@@ -1,8 +1,6 @@
-# Please refer to the Codebook for a detailed explanation of the procedures
-# of each step
+# Please refer to the Codebook for a detailed explanation of the procedures of each step
+# I will just explain the essential here.
 
-##############################
-# Load requested libraries
 library(dplyr)
 
 # Get the data, download the zip file from its URL and unzip
@@ -11,6 +9,7 @@ destFile <- "HAR_Dataset.zip"
 download.file(url = url, destfile = destFile, method = "curl")
 unzip(zipfile = destFile, overwrite = FALSE)
 file.remove(destFile)
+
 
 ##### Point 1 ######
 # First, extract the feature and activity names from the source files
@@ -29,26 +28,28 @@ Subject <- rbind(subject_train, subject_test)
 X <- rbind(x_train, x_test)
 y <- rbind(y_train, y_test)
 
-#Merging
+# Merge!
 mergedDataFrame <- cbind(Subject, y, X)
 
+
 ##### Point 2 #####
-# The selected features are the ones which contain "subject" and "mean",
-# plus the subjectID and the code (obviously). It is easy to do it by means
-# of the select function of the library dplyr
+# The selected features are the ones which contain "subject" and "mean", plus the subjectID and the code (obviously). 
+# It is easy to do it by means of the select function of the library dplyr
 selectedData <- select(mergedDataFrame, subject, code, contains("mean"), contains("std"))
 
-# To see what fields are contained in selectedData, we can create a vector
-# containing their names. We will work on them at the next step
+# To see what fields are contained in selectedData, we can create a vector containing their names. 
+# We will work on them at the next step
 fieldNames <- names(selectedData)
+
 
 ##### Point 3 #####
 # Let's rename the activities in the new dataset with descriptive names
 selectedData$code <- aLabels[selectedData$code, 2]
 
+
 ##### Point 4 #####
-# Let's give more descriptive names to the fields by removing shortenings,
-# like replacing "Mag" with "Magnitude". See Codename.md for a more complete explanation
+# Let's give more descriptive names to the fields by removing shortenings.
+# See Codename.md for a more complete explanation
 
 fieldNames[2] <- "activity"
 fieldNames <- gsub("^t", "Time", fieldNames)
@@ -63,5 +64,13 @@ fieldNames <- gsub("[\\.-]mean()", "Mean", fieldNames, ignore.case = TRUE)
 fieldNames <- gsub("[\\.-]std()", "STDev", fieldNames, ignore.case = TRUE)
 fieldNames <- gsub("[\\.-]freq()", "Frequency", fieldNames, ignore.case = TRUE)
 
-#Finally, rename since everything is alright
+# Finally, rename since everything is alright
 names(selectedData) <- fieldNames
+
+##### Point 5 #####
+# Create the tidy dataset
+tidyData <- group_by(selectedData, subject, activity)
+tidyData <- summarise_all(tidyData, funs(mean))
+
+# Export the results
+write.table(tidyData, "tidyData.txt", row.name = FALSE)
