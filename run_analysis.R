@@ -1,4 +1,4 @@
-# Please refer to the cookbook for a detailed explanation of the procedures
+# Please refer to the Codebook for a detailed explanation of the procedures
 # of each step
 
 ##############################
@@ -15,7 +15,7 @@ file.remove(destFile)
 ##### Point 1 ######
 # First, extract the feature and activity names from the source files
 features <- read.table("UCI HAR Dataset/features.txt", col.names = c("n","functions"))
-activities <- read.table("UCI HAR Dataset/activity_labels.txt", col.names = c("code", "activity"))
+aLabels <- read.table("UCI HAR Dataset/activity_labels.txt", col.names = c("code", "activity"))
 
 # Let's organise data into tables and create the dataframes we need
 subject_test <- read.table("UCI HAR Dataset/test/subject_test.txt", col.names = "subject")
@@ -30,14 +30,38 @@ X <- rbind(x_train, x_test)
 y <- rbind(y_train, y_test)
 
 #Merging
-mergedDataFrame <- cbind(Subject, X, y)
+mergedDataFrame <- cbind(Subject, y, X)
 
 ##### Point 2 #####
 # The selected features are the ones which contain "subject" and "mean",
 # plus the subjectID and the code (obviously). It is easy to do it by means
 # of the select function of the library dplyr
-selectedData <- select(Merged_Data, subject, code, contains("mean"), contains("std"))
+selectedData <- select(mergedDataFrame, subject, code, contains("mean"), contains("std"))
 
 # To see what fields are contained in selectedData, we can create a vector
 # containing their names. We will work on them at the next step
-undescNames <- names(selectedData)
+fieldNames <- names(selectedData)
+
+##### Point 3 #####
+# Let's rename the activities in the new dataset with descriptive names
+selectedData$code <- aLabels[selectedData$code, 2]
+
+##### Point 4 #####
+# Let's give more descriptive names to the fields by removing shortenings,
+# like replacing "Mag" with "Magnitude". See Codename.md for a more complete explanation
+
+fieldNames[2] <- "activity"
+fieldNames <- gsub("^t", "Time", fieldNames)
+fieldNames <- gsub("^f", "Frequency", fieldNames)
+fieldNames <- gsub("Acc", "Accelerometer", fieldNames)
+fieldNames <- gsub("BodyBody", "Body", fieldNames)
+fieldNames <- gsub("Gyro", "Gyroscope", fieldNames)
+fieldNames <- gsub("Mag", "Magnitude", fieldNames)
+fieldNames <- gsub("angle", "Angle", fieldNames)
+fieldNames <- gsub("gravity", "Gravity", fieldNames)
+fieldNames <- gsub("[\\.-]mean()", "Mean", fieldNames, ignore.case = TRUE)
+fieldNames <- gsub("[\\.-]std()", "STDev", fieldNames, ignore.case = TRUE)
+fieldNames <- gsub("[\\.-]freq()", "Frequency", fieldNames, ignore.case = TRUE)
+
+#Finally, rename since everything is alright
+names(selectedData) <- fieldNames
